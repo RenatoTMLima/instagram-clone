@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import './Feed.css';
 import api from '../services/Api';
+import io from 'socket.io-client';
 
 import more from '../assets/more.svg';
 import like from '../assets/like.svg';
@@ -13,9 +14,29 @@ class Feed extends Component{
    }
    
    async componentDidMount(){
+      this.registerToSocket();
+
       const response = await api.get('/post');
 
       this.setState({feed: response.data});
+   }
+
+   registerToSocket = () => {
+      const socket = io('http://localhost:3333');
+
+      socket.on('post', newPost => {
+         this.setState({feed: [newPost, ...this.state.feed]})
+      })
+
+      socket.on('like', likedPost => {
+         this.setState({
+            feed: this.state.feed.map(post => post._id == likedPost._id ? likedPost : post)
+         })
+      })
+   }
+
+   handleLike = id => {
+      api.post(`/post/${id}/like`);
    }
    
    render(){
@@ -32,11 +53,13 @@ class Feed extends Component{
                      <img src={more} alt="Mais"></img>
                   </header>
    
-                  <img src={`http://localhost:3333/files/${post.image}`} alt="Renato Takao Liberdade"/>
+                  <img src={`http://localhost:3333/files/${post.image}`} />
    
                   <footer>
                      <div className="actions">
-                        <img src={like} alt="Like"></img>
+                        <button type="button" onClick={() => this.handleLike(post._id)}>
+                           <img src={like} alt="Like"></img>
+                        </button>
                         <img src={comment} alt="Comentário"></img>
                         <img src={send} alt="Enviar"></img>
                      </div>

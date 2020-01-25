@@ -2,6 +2,8 @@ import React, {Component} from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import {View, StyleSheet, TouchableOpacity, Text, TextInput, Image} from 'react-native';
 
+import api from '../services/api';
+
 import camera from '../assets/camera.png';
 
 export default class New extends Component{
@@ -10,6 +12,8 @@ export default class New extends Component{
    }
 
    state = {
+      image: null,
+      preview: null,
       author: '',
       place: '',
       description: '',
@@ -18,14 +22,50 @@ export default class New extends Component{
 
    handleSelectImage = async () => {
       const image = await ImagePicker.launchImageLibraryAsync({
-         mediaTypes: ImagePicker.MediaTypeOptions.All
+         mediaTypes: ImagePicker.MediaTypeOptions.All,
+         base64: true
       });  
+
+      if(image.cancelled){
+         console.log('Cancelou');
+      }else{
+         const preview = {
+            uri: `data:image/jpeg;base64,${image.base64}`
+         }
+
+         this.setState({preview, image});
+      }
    }
 
    handleCameraImage = async () => {
       const image = await ImagePicker.launchCameraAsync({
-         mediaTypes: ImagePicker.MediaTypeOptions.All
+         mediaTypes: ImagePicker.MediaTypeOptions.All,
+         base64: true
       });  
+
+      if(image.cancelled){
+         console.log('Cancelou');
+      }else{
+         const preview = {
+            uri: `data:image/jpeg;base64,${image.base64}`
+         }
+
+         this.setState({preview, image});
+      }
+   }
+
+   handleSubmit = async () => {
+      const data = new FormData();
+
+      data.append('image', this.state.image);
+      data.append('author', this.state.author);
+      data.append('place', this.state.place);
+      data.append('description', this.state.description);
+      data.append('hashtags', this.state.hashtags);
+
+      await api.post('/post', data);
+
+      this.props.navigation.navigate('Feed');
    }
 
    async componentDidMount(){
@@ -44,14 +84,15 @@ export default class New extends Component{
       return (
       <View style={styles.container}>
          <View style={styles.cameraButtons}>
-         <TouchableOpacity style={styles.selectButton} onPress={this.handleSelectImage}>
-            <Text style={styles.selectButtonText}>Selecionar imagem</Text>
-         </TouchableOpacity>
-         <TouchableOpacity style={styles.cameraOpen} onPress={this.handleCameraImage}>
-            <Image style={styles.cameraIcon} source={camera} />
-         </TouchableOpacity>
-
+            <TouchableOpacity style={styles.selectButton} onPress={this.handleSelectImage}>
+               <Text style={styles.selectButtonText}>Selecionar imagem</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cameraOpen} onPress={this.handleCameraImage}>
+               <Image style={styles.cameraIcon} source={camera} />
+            </TouchableOpacity>
          </View>
+
+         { this.state.preview && <Image style={styles.preview} source={this.state.preview} />}
 
          <TextInput 
             style={styles.input}
@@ -93,7 +134,7 @@ export default class New extends Component{
             onChangeText={hashtags => this.setState({hashtags})}
          />
 
-         <TouchableOpacity style={styles.shareButton} onPress={() => {}}>
+         <TouchableOpacity style={styles.shareButton} onPress={this.handleSubmit}>
             <Text style={styles.shareButtonText}>Compartilhar</Text>
          </TouchableOpacity>
       </View>

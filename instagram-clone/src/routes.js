@@ -13,6 +13,7 @@ export default createAppContainer(
       Feed,
       New
    },{
+      //initialRouteName: 'New',
       defaultNavigationOptions: {
          headerTintColor: '#000',
          headerTitle: () => <Image source={logo} />,
